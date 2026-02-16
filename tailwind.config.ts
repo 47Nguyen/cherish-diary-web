@@ -61,6 +61,14 @@ export default {
         },
         peach: "hsl(var(--peach))",
         cream: "hsl(var(--cream))",
+        "boy-accent": {
+          DEFAULT: "hsl(var(--boy-accent))",
+          light: "hsl(var(--boy-accent-light))",
+        },
+        "girl-accent": {
+          DEFAULT: "hsl(var(--girl-accent))",
+          light: "hsl(var(--girl-accent-light))",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",

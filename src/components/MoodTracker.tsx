@@ -18,22 +18,23 @@ const MOODS = [
 ];
 
 interface MoodTrackerProps {
+  role: "boy" | "girl";
   onMoodAdded: () => void;
 }
 
-const MoodTracker = ({ onMoodAdded }: MoodTrackerProps) => {
+const MoodTracker = ({ role, onMoodAdded }: MoodTrackerProps) => {
   const [selectedMood, setSelectedMood] = useState<{ emoji: string; label: string } | null>(null);
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
+  const accentClass = role === "girl" ? "text-girl-accent" : "text-boy-accent";
+  const bgAccentClass = role === "girl" ? "bg-girl-accent hover:bg-girl-accent/90" : "bg-boy-accent hover:bg-boy-accent/90";
+  const ringClass = role === "girl" ? "ring-girl-accent bg-girl-accent/20" : "ring-boy-accent bg-boy-accent/20";
+
   const handleSubmit = async () => {
     if (!selectedMood) {
-      toast({
-        title: "Please select a mood 💕",
-        description: "How are you feeling today?",
-        variant: "destructive",
-      });
+      toast({ title: "Please select a mood 💕", description: "How are you feeling today?", variant: "destructive" });
       return;
     }
 
@@ -42,24 +43,16 @@ const MoodTracker = ({ onMoodAdded }: MoodTrackerProps) => {
       emoji: selectedMood.emoji,
       mood_label: selectedMood.label,
       notes: notes || null,
+      role,
     });
-
     setIsSubmitting(false);
 
     if (error) {
-      toast({
-        title: "Oops!",
-        description: "Couldn't save your mood. Try again?",
-        variant: "destructive",
-      });
+      toast({ title: "Oops!", description: "Couldn't save your mood. Try again?", variant: "destructive" });
       return;
     }
 
-    toast({
-      title: "Mood saved! 💖",
-      description: `Feeling ${selectedMood.label.toLowerCase()} today`,
-    });
-
+    toast({ title: "Mood saved! 💖", description: `Feeling ${selectedMood.label.toLowerCase()} today` });
     setSelectedMood(null);
     setNotes("");
     onMoodAdded();
@@ -69,7 +62,7 @@ const MoodTracker = ({ onMoodAdded }: MoodTrackerProps) => {
     <Card className="glass-card soft-shadow">
       <CardHeader className="pb-4">
         <CardTitle className="flex items-center gap-2 font-display text-2xl text-foreground">
-          <Heart className="h-6 w-6 text-primary animate-pulse-soft" />
+          <Heart className={`h-6 w-6 animate-pulse-soft ${accentClass}`} />
           How are you feeling?
         </CardTitle>
       </CardHeader>
@@ -81,7 +74,7 @@ const MoodTracker = ({ onMoodAdded }: MoodTrackerProps) => {
               onClick={() => setSelectedMood(mood)}
               className={`flex flex-col items-center gap-1 rounded-xl p-3 transition-all duration-200 hover:scale-110 ${
                 selectedMood?.label === mood.label
-                  ? "bg-primary/20 ring-2 ring-primary scale-105"
+                  ? `${ringClass} ring-2 scale-105`
                   : "bg-muted/50 hover:bg-muted"
               }`}
             >
@@ -101,7 +94,7 @@ const MoodTracker = ({ onMoodAdded }: MoodTrackerProps) => {
         <Button
           onClick={handleSubmit}
           disabled={isSubmitting}
-          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-6 text-lg rounded-xl transition-all duration-200 hover:scale-[1.02]"
+          className={`w-full ${bgAccentClass} text-primary-foreground font-semibold py-6 text-lg rounded-xl transition-all duration-200 hover:scale-[1.02]`}
         >
           {isSubmitting ? "Saving..." : "Save My Mood 💕"}
         </Button>

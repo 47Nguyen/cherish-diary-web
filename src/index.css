@@ -43,6 +43,10 @@
     --lavender-light: 280 40% 95%;
     --peach: 20 80% 88%;
     --cream: 40 50% 96%;
+    --boy-accent: 210 60% 60%;
+    --boy-accent-light: 210 50% 92%;
+    --girl-accent: 340 65% 65%;
+    --girl-accent-light: 340 60% 92%;
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -89,6 +93,10 @@
     --lavender-light: 280 30% 18%;
     --peach: 20 60% 35%;
     --cream: 40 30% 15%;
+    --boy-accent: 210 50% 50%;
+    --boy-accent-light: 210 40% 20%;
+    --girl-accent: 340 60% 55%;
+    --girl-accent-light: 340 40% 20%;
 
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;

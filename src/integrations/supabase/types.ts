@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          role: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          role: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          role?: string
+        }
+        Relationships: []
+      }
       moods: {
         Row: {
           created_at: string
@@ -21,6 +42,7 @@ export type Database = {
           id: string
           mood_label: string
           notes: string | null
+          role: string
         }
         Insert: {
           created_at?: string
@@ -28,6 +50,7 @@ export type Database = {
           id?: string
           mood_label: string
           notes?: string | null
+          role?: string
         }
         Update: {
           created_at?: string
@@ -35,27 +58,7 @@ export type Database = {
           id?: string
           mood_label?: string
           notes?: string | null
-        }
-        Relationships: []
-      }
-      wishlist: {
-        Row: {
-          created_at: string
-          id: string
-          is_fulfilled: boolean
-          item: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          is_fulfilled?: boolean
-          item: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          is_fulfilled?: boolean
-          item?: string
+          role?: string
         }
         Relationships: []
       }
