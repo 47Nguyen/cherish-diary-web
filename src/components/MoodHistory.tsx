@@ -23,7 +23,7 @@ const MoodHistory = ({ moods, currentRole }: MoodHistoryProps) => {
         <CardHeader className="pb-4">
           <CardTitle className="flex items-center gap-2 font-display text-2xl text-foreground">
             <Calendar className={`h-6 w-6 ${currentRole === "girl" ? "text-girl-accent" : "text-boy-accent"}`} />
-            Our Moods
+            {currentRole === "girl" ? "Her Moods 🌸" : "His Moods 💙"}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -40,7 +40,7 @@ const MoodHistory = ({ moods, currentRole }: MoodHistoryProps) => {
       <CardHeader className="pb-4">
         <CardTitle className="flex items-center gap-2 font-display text-2xl text-foreground">
           <Calendar className={`h-6 w-6 ${currentRole === "girl" ? "text-girl-accent" : "text-boy-accent"}`} />
-          Our Moods
+          {currentRole === "girl" ? "Her Moods 🌸" : "His Moods 💙"}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -54,13 +54,6 @@ const MoodHistory = ({ moods, currentRole }: MoodHistoryProps) => {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-semibold text-foreground">{mood.mood_label}</span>
-                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                    mood.role === "girl"
-                      ? "bg-girl-accent-light text-girl-accent"
-                      : "bg-boy-accent-light text-boy-accent"
-                  }`}>
-                    {mood.role === "girl" ? "Her" : "Him"}
-                  </span>
                   <span className="text-xs text-muted-foreground">
                     {format(new Date(mood.created_at), "MMM d, h:mm a")}
                   </span>
