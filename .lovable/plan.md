@@ -1,53 +1,66 @@
 
-## Fix: SPA Routing on Render
+## Fix: Render SPA Routing — The Real Solution
 
-### The Problem
+### Why The Previous Fix Didn't Work
 
-This app is a React SPA (Single Page Application). All routing (`/girl`, `/boy`, etc.) is handled by React Router **in the browser**. When you:
+The `public/_redirects` file is a **Netlify-specific** feature. Render does **not** read or respect this file at all. This is why pasting `/girl` or `/boy` into a new tab still shows "404 — Oops, page not found" — Render has no instruction to serve `index.html` for those paths.
 
-1. Start from `/` and click a link → React Router navigates client-side. Works fine.
-2. Paste `/girl` directly into a new tab → The browser asks Render's server for a file at `/girl`. No such file exists, so Render returns a 404 or blank page.
+### How Render Actually Handles This
 
-### The Fix
+Render uses one of two methods for redirect/rewrite rules on static sites:
 
-Render supports a `_redirects` file (placed in the `public/` folder, which Vite copies to the build output). This file tells Render: "For any URL that doesn't match a real file, serve `index.html` instead." React Router then reads the URL and shows the correct page.
+1. **Dashboard UI** — manually add rules in the Render dashboard (requires the user to do it manually every deploy).
+2. **`render.yaml`** — a configuration file placed at the project root. Render reads this automatically on every deploy. This is the reliable, code-level solution.
 
-### Files to Create
+### The Fix: Add `render.yaml`
 
-**`public/_redirects`** (one line):
+Create a `render.yaml` file at the project root with this content:
+
+```yaml
+services:
+  - type: web
+    name: this-is-for-you
+    env: static
+    buildCommand: npm run build
+    staticPublishPath: ./dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
 ```
-/* /index.html 200
-```
 
-This single line means:
-- `/*` → match any URL path
-- `/index.html` → serve the app's entry HTML file
-- `200` → return a 200 OK status (not a redirect), so the URL stays as `/girl` in the browser
+The key part is the `routes` section:
+- `type: rewrite` — serves `index.html` without changing the URL in the browser (so React Router still sees `/girl` or `/boy`)
+- `source: /*` — matches ALL paths
+- `destination: /index.html` — serves the app entry point
 
-### Why This Works
+### What This Looks Like End-to-End
 
 ```text
-User pastes: https://your-site.onrender.com/girl
+User pastes: https://this-is-for-you-rcsb.onrender.com/girl
        ↓
-Render server checks: does /girl exist as a file? No.
+Render reads render.yaml: /* → rewrite to /index.html
        ↓
-Render reads _redirects: /* → /index.html (200)
+Serves index.html (URL stays as /girl in browser)
        ↓
-Serves index.html to the browser
+React Router reads /girl
        ↓
-React Router reads the URL path (/girl)
-       ↓
-Renders the correct CouplesPage with role="girl" ✓
+Shows Her Side 🌸 ✓
 ```
 
-### No Other Changes Needed
+### Files to Change
 
-- No changes to `vite.config.ts`, `App.tsx`, or any React code.
-- This is purely a hosting configuration file that Render reads automatically.
-- The `public/` folder is the correct location — Vite copies everything in `public/` directly to the build output (`dist/`) during deployment.
+1. **Create `render.yaml`** at the project root — the new Render configuration file with the rewrite rule.
+2. **Keep `public/_redirects`** as-is — it does no harm (Render ignores it), and if the project is ever moved to Netlify it would be useful.
 
-### After This Fix
+### Important Note
 
-Both of these will work correctly when pasted directly into a browser:
-- `https://this-is-for-you-rcsb.onrender.com/girl` → Her side 🌸
-- `https://this-is-for-you-rcsb.onrender.com/boy` → His side 💙
+After this file is committed and pushed, Render will need to **redeploy** the project for the `render.yaml` to take effect. Since this is hosted on an external service (Render), you will need to trigger a redeploy on Render's dashboard after pushing these changes — either manually or by pushing a new commit to the connected Git branch.
+
+### Technical Details
+
+The `render.yaml` format for a static site follows Render's Infrastructure-as-Code (IaC) spec:
+- `type: web` with `env: static` = a static site service
+- `buildCommand` must match what you currently use (`npm run build`)
+- `staticPublishPath` must point to Vite's output directory (`./dist`)
+- The `routes` array is evaluated in order; Render only applies a rule if no real file exists at the requested path — so `/index.html`, `/assets/main.js`, etc. are still served correctly as static files
