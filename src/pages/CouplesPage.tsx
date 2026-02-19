@@ -84,19 +84,12 @@ const CouplesPage = ({ role }: CouplesPageProps) => {
 
       <main className="px-4 pb-12">
         <div className="max-w-5xl mx-auto space-y-6">
-          {/* Side by side mood trackers */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Girl side - left */}
-            <div className={`space-y-4 ${role !== "girl" ? "opacity-60 pointer-events-none" : ""}`}>
-              <h2 className="font-display text-xl font-semibold text-girl-accent text-center">Her Side 🌸</h2>
-              <MoodTracker role="girl" onMoodAdded={fetchMoods} />
-            </div>
-
-            {/* Boy side - right */}
-            <div className={`space-y-4 ${role !== "boy" ? "opacity-60 pointer-events-none" : ""}`}>
-              <h2 className="font-display text-xl font-semibold text-boy-accent text-center">His Side 💙</h2>
-              <MoodTracker role="boy" onMoodAdded={fetchMoods} />
-            </div>
+          {/* Single mood tracker for current role */}
+          <div className="space-y-4">
+            <h2 className={`font-display text-xl font-semibold text-center ${role === "girl" ? "text-girl-accent" : "text-boy-accent"}`}>
+              {role === "girl" ? "Your Mood 🌸" : "Your Mood 💙"}
+            </h2>
+            <MoodTracker role={role} onMoodAdded={fetchMoods} />
           </div>
 
           {/* Shared messages */}
