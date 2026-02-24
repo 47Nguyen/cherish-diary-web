@@ -1,73 +1,111 @@
 
-## Root Cause — Finally Identified
 
-The core problem is that the app uses `BrowserRouter`, which relies on the server to serve `index.html` for every URL path. When Render can't do that correctly as a static site, you get 404s or broken redirects.
+## Daily 8 AM Bangkok Push Notification Reminders
 
-Every attempted server-side fix (render.yaml, _redirects, dashboard rules) has either been ignored by Render or configured as a hard redirect that actually changes the URL in the browser to `/index.html` — which is what you're seeing right now.
+### What This Does
 
-### The Real Fix: Switch to HashRouter
+Every day at 8 AM Bangkok time (1 AM UTC), each user's phone will receive a push notification reminding them to update their mood status. This works even when the browser is closed, as long as they previously granted notification permission.
 
-`HashRouter` puts the routing information after a `#` symbol in the URL:
-
-```
-Before (BrowserRouter): https://this-is-for-you-rcsb.onrender.com/girl
-After  (HashRouter):    https://this-is-for-you-rcsb.onrender.com/#/girl
-```
-
-The critical difference: **everything after `#` is handled entirely by the browser**. When you paste `/#/girl` into a new tab, the browser asks Render for `/` (the root), gets `index.html` successfully, and then React Router reads `#/girl` and shows the correct page. Render never needs to know about `/girl` at all.
-
-This is the standard, universally reliable solution for React SPAs deployed to static hosting.
-
-### What Changes
-
-**`src/App.tsx`** — swap `BrowserRouter` for `HashRouter` (one import, one tag change):
-
-```tsx
-// Before
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-<BrowserRouter> ... </BrowserRouter>
-
-// After
-import { HashRouter, Routes, Route } from "react-router-dom";
-<HashRouter> ... </HashRouter>
-```
-
-**`src/pages/LandingPage.tsx`** — the `<Link to="/girl">` and `<Link to="/boy">` links already use relative paths, so they work identically with HashRouter. No change needed here.
-
-No changes needed to any other files — not `render.yaml`, not `_redirects`, not `vite.config.ts`.
-
-### How URLs Will Look After the Fix
-
-| Action | URL in browser |
-|---|---|
-| Open the site | `https://this-is-for-you-rcsb.onrender.com/` |
-| Click "I'm Her" | `https://this-is-for-you-rcsb.onrender.com/#/girl` |
-| Paste that URL directly | Works — shows Her Side 🌸 |
-| Click "I'm Him" | `https://this-is-for-you-rcsb.onrender.com/#/boy` |
-| Paste that URL directly | Works — shows His Side 💙 |
-
-### Why This Works Without Any Server Configuration
+### How It Works
 
 ```text
-User pastes: https://this-is-for-you-rcsb.onrender.com/#/girl
+User opens /#/girl or /#/boy
        ↓
-Browser asks Render for: / (the hash part is never sent to the server)
+App asks: "Allow notifications?"
        ↓
-Render serves index.html ✓ (this always works — it's the root file)
+User taps "Allow" → browser generates a push subscription
        ↓
-React + HashRouter reads: #/girl
+Subscription saved to database (tagged as "girl" or "boy")
        ↓
-Shows Her Side 🌸 ✓
+Every day at 1 AM UTC (8 AM Bangkok):
+  Cron job triggers backend function
+       ↓
+  Function reads all subscriptions from DB
+       ↓
+  Sends Web Push notification to each device
+       ↓
+  Phone shows: "Time to update your mood! 💕"
 ```
 
-### Files to Modify
+### Important Notes for You
 
-Only one file needs to change:
+- **Android**: Works in Chrome — just tap "Allow" when prompted
+- **iPhone**: You must first **add the site to your Home Screen** (Safari → Share → Add to Home Screen), then open it from there. Only then will the notification permission prompt appear. This is an Apple requirement.
+- If you change phones or clear browser data, you'll need to tap "Enable Reminders" again
 
-- **`src/App.tsx`** — change `BrowserRouter` import and usage to `HashRouter`
+---
 
-No database changes, no backend changes, no new files, no Render dashboard steps required.
+### Technical Implementation
 
-### After This Fix
+#### 1. VAPID Keys
 
-You will need to redeploy to Render (push the change to your Git repo) for it to take effect. Once deployed, share the new `/#/girl` and `/#/boy` URLs.
+Web Push requires a cryptographic key pair (VAPID keys) to identify the server as the notification sender. I will:
+- Generate a VAPID key pair
+- Store the private key + email as backend secrets (you'll need to provide an email address)
+- Embed the public key in the frontend (safe to be public)
+
+#### 2. New Database Table — `push_subscriptions`
+
+```sql
+CREATE TABLE public.push_subscriptions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  role text NOT NULL,
+  endpoint text NOT NULL UNIQUE,
+  p256dh text NOT NULL,
+  auth text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+-- RLS: open insert/select/delete (no auth in this app)
+```
+
+#### 3. Service Worker — `public/sw.js`
+
+A small file that runs in the background and displays the notification when a push event arrives:
+```javascript
+self.addEventListener('push', (event) => {
+  const data = event.data?.json() ?? {};
+  self.registration.showNotification(data.title, { body: data.body, icon: '/favicon.ico' });
+});
+```
+
+#### 4. Frontend Changes
+
+- New **`src/hooks/usePushNotification.ts`** hook — handles requesting permission, registering the service worker, subscribing to push, and saving the subscription to the database
+- **`src/pages/CouplesPage.tsx`** — add an "Enable Reminders 🔔" button in the header area that triggers the hook. Once enabled, it shows "Reminders On ✓"
+
+#### 5. Backend Function — `send-mood-reminders`
+
+A new backend function (`supabase/functions/send-mood-reminders/index.ts`) that:
+1. Reads all push subscriptions from the database
+2. Sends a Web Push notification to each one using VAPID keys
+3. Removes expired/invalid subscriptions automatically
+
+#### 6. Cron Job — Daily at 1 AM UTC (8 AM Bangkok)
+
+A scheduled database job that calls the backend function every day:
+```sql
+SELECT cron.schedule(
+  'daily-mood-reminder',
+  '0 1 * * *',  -- 1 AM UTC = 8 AM Bangkok (UTC+7)
+  $$ SELECT net.http_post(...) $$
+);
+```
+
+### Files to Create / Modify
+
+| File | Action | Purpose |
+|---|---|---|
+| `public/sw.js` | Create | Service worker for push events |
+| `src/hooks/usePushNotification.ts` | Create | Hook for push subscription logic |
+| `src/pages/CouplesPage.tsx` | Modify | Add "Enable Reminders" button |
+| `supabase/functions/send-mood-reminders/index.ts` | Create | Backend function to send pushes |
+| New migration | Create | `push_subscriptions` table + RLS |
+| Cron SQL | Insert | Schedule the daily 8 AM Bangkok job |
+
+### Secrets Needed
+
+Before I can implement this, I will need to store two secrets:
+1. **VAPID_PRIVATE_KEY** — I will generate this and ask you to save it
+2. **VAPID_PUBLIC_KEY** — stored as a secret for the backend function
+3. **VAPID_SUBJECT** — an email address (e.g. `mailto:you@example.com`) used to identify the push sender
+
