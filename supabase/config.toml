@@ -1,1 +1,7 @@
 project_id = "vcefsjwwngpypflswnhp"
+
+[functions.generate-vapid-keys]
+verify_jwt = false
+
+[functions.send-mood-reminders]
+verify_jwt = false
